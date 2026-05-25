@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ローカルMarkdownメモアプリ</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+  <!-- Marked.js (Markdown Parser) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Style CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- サイドバー / ナビゲーション -->
+    <header class="app-header">
+      <div class="logo">
+        <i data-lucide="edit-3" class="logo-icon"></i>
+        <h1>Weekly Memo</h1>
+      </div>
+      <nav class="app-nav">
+        <button class="nav-btn active" data-tab="weekday">
+          <i data-lucide="message-square"></i>
+          <span>平日メモ</span>
+        </button>
+        <button class="nav-btn" data-tab="weekend">
+          <i data-lucide="book-open"></i>
+          <span>週末内省</span>
+        </button>
+        <button class="nav-btn" data-tab="settings">
+          <i data-lucide="settings"></i>
+          <span>設定</span>
+        </button>
+      </nav>
+      <div class="theme-toggle-container">
+        <button id="theme-toggle-btn" class="theme-btn" title="テーマ切り替え">
+          <i data-lucide="moon" id="theme-icon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="app-main">
+      <!-- 平日メモ画面 -->
+      <section id="tab-weekday" class="tab-content active">
+        <div class="card glass">
+          <div class="card-header">
+            <h2>平日の断片メモ</h2>
+            <p class="subtitle">日付やタイトルを気にせず、今思いついた一言を記録します。</p>
+          </div>
+          <div class="card-body">
+            <div class="target-info">
+              <i data-lucide="calendar"></i>
+              <span>対象週: <strong id="weekday-target-week">--</strong></span>
+              <span class="file-badge" id="weekday-target-file">--.md</span>
+            </div>
+            
+            <div class="form-group">
+              <textarea id="memo-input" placeholder="思いついたことをここに書き込みます（Markdown形式）...&#10;・Ctrl + Enter で送信できます" rows="5"></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button id="send-memo-btn" class="btn btn-primary">
+                <i data-lucide="send"></i>
+                <span>送信する</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 最近のメモ履歴 -->
+        <div class="card glass mt-6">
+          <div class="card-header flex justify-between items-center">
+            <h3>今週の断片メモ履歴</h3>
+            <button id="refresh-memos-btn" class="btn btn-icon-text" title="履歴を更新">
+              <i data-lucide="rotate-cw" class="icon-spin-hover"></i>
+              <span>同期</span>
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="memos-history-list" class="history-list">
+              <div class="empty-state">
+                <i data-lucide="info"></i>
+                <p>履歴はありません。「設定」でGitHub連携を行い、「同期」ボタンを押してください。</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 週末内省画面 -->
+      <section id="tab-weekend" class="tab-content">
+        <div class="weekend-container">
+          <!-- コントロールバー -->
+          <div class="card glass mb-4">
+            <div class="card-body flex justify-between items-center flex-wrap gap-4">
+              <div class="flex items-center gap-3">
+                <i data-lucide="calendar-days" class="text-primary"></i>
+                <label for="weekend-week-select" class="font-semibold">対象週選択:</label>
+                <select id="weekend-week-select" class="select-control">
+                  <!-- JSで動的に過去数週分を生成 -->
+                </select>
+                <button id="load-report-btn" class="btn btn-secondary">
+                  <i data-lucide="download"></i>
+                  <span>レポートを読み込む</span>
+                </button>
+              </div>
+              <div class="flex gap-2">
+                <button id="save-report-btn" class="btn btn-primary" disabled>
+                  <i data-lucide="save"></i>
+                  <span>確定保存する</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- エディタエリア -->
+          <div class="editor-layout">
+            <!-- 左側：入力・編集 -->
+            <div class="editor-pane">
+              <div class="card glass h-full flex flex-col">
+                <div class="card-header pb-2 border-b">
+                  <div class="flex justify-between items-center">
+                    <h3 class="flex items-center gap-2">
+                      <i data-lucide="edit-2"></i>エディタ
+                    </h3>
+                    <div class="draft-indicator" id="draft-status">一時保存されています</div>
+                  </div>
+                </div>
+                <div class="card-body flex-1 flex flex-col p-0">
+                  <!-- 断片メモセクション -->
+                  <div class="editor-section border-b">
+                    <div class="section-label">
+                      <i data-lucide="list"></i> 今週の断片メモ（編集・追加可能）
+                    </div>
+                    <textarea id="editor-memos" placeholder="- 断片メモをここに箇条書きで記述します..."></textarea>
+                  </div>
+                  <!-- 週末内省セクション -->
+                  <div class="editor-section flex-1 flex flex-col">
+                    <div class="section-label">
+                      <i data-lucide="feather"></i> 週末の内省・雑記（長文執筆）
+                    </div>
+                    <textarea id="editor-review" class="flex-1" placeholder="今週の振り返り、気づき、来週の課題などを自由に執筆します..."></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右側：プレビュー -->
+            <div class="preview-pane">
+              <div class="card glass h-full flex flex-col">
+                <div class="card-header pb-2 border-b">
+                  <div class="flex justify-between items-center">
+                    <h3 class="flex items-center gap-2">
+                      <i data-lucide="eye"></i>リアルタイムプレビュー
+                    </h3>
+                    <button id="toggle-preview-layout" class="btn btn-icon" title="プレビューを非表示/表示">
+                      <i data-lucide="columns"></i>
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body flex-1 overflow-y-auto markdown-body" id="preview-content">
+                  <div class="empty-state">
+                    <i data-lucide="file-text"></i>
+                    <p>エディタに文字を入力すると、ここにプレビューが表示されます。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 設定画面 -->
+      <section id="tab-settings" class="tab-content">
+        <div class="card glass max-w-2xl mx-auto">
+          <div class="card-header">
+            <h2>システム設定</h2>
+            <p class="subtitle">GitHub APIと連携するための設定を行います。トークンはブラウザに安全に保存されます。</p>
+          </div>
+          <div class="card-body">
+            <form id="settings-form">
+              <div class="form-group">
+                <label for="setting-pat">GitHub 個人アクセストークン (PAT) <span class="required">*</span></label>
+                <div class="input-password-wrapper">
+                  <input type="password" id="setting-pat" required placeholder="github_pat_...">
+                  <button type="button" id="toggle-pat-visibility" class="btn btn-icon" title="パスワードの表示/非表示">
+                    <i data-lucide="eye"></i>
+                  </button>
+                </div>
+                <p class="help-text">リポジトリへの書き込み権限（<code>contents</code> または <code>repo</code> 権限）を持つトークンが必要です。</p>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label for="setting-owner">GitHub オーナー名 (ユーザー名または組織名) <span class="required">*</span></label>
+                  <input type="text" id="setting-owner" required placeholder="例: github-username">
+                </div>
+                <div class="form-group flex-1">
+                  <label for="setting-repo">リポジトリ名 <span class="required">*</span></label>
+                  <input type="text" id="setting-repo" required placeholder="例: my-knowledge-base">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label for="setting-folder">保存先フォルダ</label>
+                  <input type="text" id="setting-folder" placeholder="例: reviews" value="reviews">
+                  <p class="help-text">リポジトリ内のフォルダパスを指定（空欄時はルート直下）。</p>
+                </div>
+                <div class="form-group flex-1">
+                  <label for="setting-branch">使用ブランチ</label>
+                  <input type="text" id="setting-branch" placeholder="例: main" value="main">
+                </div>
+              </div>
+
+              <div class="form-actions border-t pt-4 mt-6">
+                <button type="submit" class="btn btn-primary">
+                  <i data-lucide="check"></i>
+                  <span>設定を保存する</span>
+                </button>
+                <button type="button" id="test-connection-btn" class="btn btn-secondary">
+                  <i data-lucide="activity"></i>
+                  <span>接続テスト</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- トースト通知 -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- ローディングオーバーレイ -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="spinner-container">
+      <div class="spinner"></div>
+      <p id="loading-message">GitHubと通信中...</p>
+    </div>
+  </div>
+
+  <!-- App logic -->
+  <script src="app.js"></script>
+</body>
+</html>
