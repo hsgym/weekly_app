@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const yymmdd = formatYYMMDD(monday);
     
     weekdayTargetWeek.textContent = `${formatDateYYYYMMDD(monday)} 週 (月曜日)`;
-    weekdayTargetFile.textContent = `review-${yymmdd}.md`;
+    weekdayTargetFile.textContent = `FY${yymmdd}.md`;
   }
 
   // Generate Week Selector Options for Weekend Tab (Current week + past 8 weeks)
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const option = document.createElement('option');
       option.value = yymmdd;
       
-      let label = `${formatDateYYYYMMDD(targetMonday)}の週 (review-${yymmdd}.md)`;
+      let label = `${formatDateYYYYMMDD(targetMonday)}の週 (FY${yymmdd}.md)`;
       if (i === 0) label = `【今週】 ${label}`;
       if (i === 1) label = `【先週】 ${label}`;
       
